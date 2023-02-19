@@ -2,17 +2,22 @@ import scala.io.Source
 
 object Main {
   def main(args: Array[String]): Unit = {
+    val key: Long = 811589153
     val source = Source.fromFile("Input.txt")
-    val numbers = source.getLines().map(_.toInt).toList
+    val numbers = source.getLines().map(_.toLong * key).toList
     val circle = new CircularList(numbers)
 
-    println("\nInitial arrangement:")
-    circle.printEntries
+    // println("\nInitial arrangement:")
+    // circle.printEntries
 
-    for (i <- 0 until circle.size) {
-        val entry = circle.findOriginalIndex(i)
-        circle.mix(i)
-        // circle.printEntries
+    for (t <- 0 until 10) {
+        println(s"> round $t")
+        
+        for (i <- 0 until circle.size) {
+            val entry = circle.findOriginalIndex(i)
+            circle.mix(i)
+            // circle.printEntries
+        }
     }
 
     // circle.printEntries
@@ -20,7 +25,7 @@ object Main {
   }
 }
 
-class CircularList(numbers: List[Int]) {
+class CircularList(numbers: List[Long]) {
     val size = numbers.length
     private var index = 0
 
@@ -57,15 +62,15 @@ class CircularList(numbers: List[Int]) {
             rem(entryToMix)
 
             if (steps > 0) {
-                println(s"${entryToMix.num} moves $steps step(s) between ${curr.num} and ${curr.next.num}:")
+                // println(s"${entryToMix.num} moves $steps step(s) between ${curr.num} and ${curr.next.num}:")
                 insert(entryToMix, curr)
             }
             else {
-                println(s"${entryToMix.num} moves $steps step(s) between ${curr.prev.num} and ${curr.num}:")
+                // println(s"${entryToMix.num} moves $steps step(s) between ${curr.prev.num} and ${curr.num}:")
                 insert(entryToMix, curr.prev) // Going left you need `.prev` to end up at the right spot
             }
         } else {
-            println(s"${entryToMix.num} does not move:")
+            // println(s"${entryToMix.num} does not move:")
         }  
     }
 
@@ -103,8 +108,8 @@ class CircularList(numbers: List[Int]) {
         println()
     }
 
-    def move(entry: ListEntry, steps: Int, forSwitching: Boolean): ListEntry = {
-        var n = 0
+    def move(entry: ListEntry, steps: Long, forSwitching: Boolean): ListEntry = {
+        var n: Long = 0
         var curr = entry
         val stepsNorm = normalizeSteps(steps, forSwitching)
 
@@ -123,7 +128,7 @@ class CircularList(numbers: List[Int]) {
         curr
     }
 
-    def normalizeSteps(steps: Int, forSwitching: Boolean): Int = {
+    def normalizeSteps(steps: Long, forSwitching: Boolean): Long = {
         val modulo = if (forSwitching) size - 1 else size
         
         if (steps >= 0) {
@@ -176,7 +181,7 @@ class CircularList(numbers: List[Int]) {
     }
 }
 
-class ListEntry(val num: Int, val originalIndex: Int, var next: ListEntry, var prev: ListEntry) {
+class ListEntry(val num: Long, val originalIndex: Int, var next: ListEntry, var prev: ListEntry) {
     
 }
 
