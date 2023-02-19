@@ -1,9 +1,8 @@
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val source = Source.fromFile("Example.txt")
+    val source = Source.fromFile("Input.txt")
     val numbers = source.getLines().map(_.toInt).toList
     val circle = new CircularList(numbers)
 
@@ -13,7 +12,7 @@ object Main {
     for (i <- 0 until circle.size) {
         val entry = circle.findOriginalIndex(i)
         circle.mix(i)
-        circle.printEntries
+        // circle.printEntries
     }
 
     // circle.printEntries
@@ -41,24 +40,30 @@ class CircularList(numbers: List[Int]) {
         afterCurr.prev = newEntry
         
         index += 1
-        curr = move(curr, 1)
+        curr = move(curr, 1, forSwitching = false)
     }
 
     def mix(originalIndex: Int) {
+        var forSwitching = true
         val entryToMix = findOriginalIndex(originalIndex)
         val beforeOld = entryToMix.prev
         val afterOld = entryToMix.next
-        val steps = normalizeSteps(entryToMix.num)
+        val steps = normalizeSteps(entryToMix.num, forSwitching)
 
         var curr = entryToMix
         if (steps != 0) {
-            val actualSteps = if (steps > 0) steps else steps - 1 // Step one further when going left
-            curr = move(curr, actualSteps)
-
-            println(s"${entryToMix.num} moves $steps step(s) between ${curr.num} and ${curr.next.num}:")
+            curr = move(curr, steps, forSwitching)
 
             rem(entryToMix)
-            insert(entryToMix, curr)            
+
+            if (steps > 0) {
+                println(s"${entryToMix.num} moves $steps step(s) between ${curr.num} and ${curr.next.num}:")
+                insert(entryToMix, curr)
+            }
+            else {
+                println(s"${entryToMix.num} moves $steps step(s) between ${curr.prev.num} and ${curr.num}:")
+                insert(entryToMix, curr.prev) // Going left you need `.prev` to end up at the right spot
+            }
         } else {
             println(s"${entryToMix.num} does not move:")
         }  
@@ -90,7 +95,7 @@ class CircularList(numbers: List[Int]) {
         
         while (n < size) {
             print(s"${curr.num}, ")
-            curr = move(curr, 1)
+            curr = move(curr, 1, forSwitching = false)
             n += 1
         }
 
@@ -98,15 +103,11 @@ class CircularList(numbers: List[Int]) {
         println()
     }
 
-    def move(entry: ListEntry, steps: Int): ListEntry = {
+    def move(entry: ListEntry, steps: Int, forSwitching: Boolean): ListEntry = {
         var n = 0
         var curr = entry
-        val stepsNorm = normalizeSteps(steps)
+        val stepsNorm = normalizeSteps(steps, forSwitching)
 
-        if (steps == 1000) {
-            println(s"Steps norm = $stepsNorm");
-        }
-        
         if (stepsNorm > 0) {
             while (n < stepsNorm) {
                 curr = curr.next
@@ -122,11 +123,13 @@ class CircularList(numbers: List[Int]) {
         curr
     }
 
-    def normalizeSteps(steps: Int): Int = {
+    def normalizeSteps(steps: Int, forSwitching: Boolean): Int = {
+        val modulo = if (forSwitching) size - 1 else size
+        
         if (steps >= 0) {
-            steps % size
+            steps % modulo
         } else {
-            -(-steps % size)
+            -(-steps % modulo)
         }
     }
 
@@ -139,7 +142,7 @@ class CircularList(numbers: List[Int]) {
                 return curr
             }
 
-            curr = move(curr, 1)
+            curr = move(curr, 1, forSwitching = false)
             n += 1
         }
 
@@ -155,7 +158,7 @@ class CircularList(numbers: List[Int]) {
                 return curr
             }
 
-            curr = move(curr, 1)
+            curr = move(curr, 1, forSwitching = false)
             n += 1
         }
 
@@ -164,9 +167,9 @@ class CircularList(numbers: List[Int]) {
 
     def printResult = {
         val zero = findZero
-        val res1 = move(zero, 1000)
-        val res2 = move(res1, 1000)
-        val res3 = move(res2, 1000)
+        val res1 = move(zero, 1000, forSwitching = false)
+        val res2 = move(res1, 1000, forSwitching = false)
+        val res3 = move(res2, 1000, forSwitching = false)
         val total = res1.num + res2.num + res3.num
 
         println(s"${res1.num} + ${res2.num} + ${res3.num} = $total")        
@@ -178,3 +181,4 @@ class ListEntry(val num: Int, val originalIndex: Int, var next: ListEntry, var p
 }
 
 // -5555 (-651 + 1528 -6432) not right
+// 10106 (2674 + 8689 - 1257) too low
