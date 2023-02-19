@@ -7,11 +7,11 @@ object Main {
     val numbers = source.getLines().map(_.toInt).toList
     val circle = new CircularList(numbers)
 
+    println("\nInitial arrangement:")
     circle.printEntries
 
     for (i <- 0 until circle.size) {
-        val entry = circle.find(i)
-        println(s"--> Mixing with index $i: (${entry.num}, ${entry.originalIndex})")
+        val entry = circle.findOriginalIndex(i)
         circle.mix(i)
         circle.printEntries
     }
@@ -23,17 +23,16 @@ object Main {
 
 class CircularList(numbers: List[Int]) {
     val size = numbers.length
-    private val first = numbers.head
     private var index = 0
 
-    var start = new ListEntry(first, index, null, null)
+    var start = new ListEntry(numbers.head, index, null, null)
     start.next = start
     start.prev = start
     index += 1
+    
     private var curr = start
     
     for (num <- numbers.tail) {
-        println(s"> Adding $num")
         var afterCurr = curr.next
         val newEntry = new ListEntry(num, index, null, null)
         newEntry.prev = curr
@@ -42,28 +41,45 @@ class CircularList(numbers: List[Int]) {
         afterCurr.prev = newEntry
         
         index += 1
-        curr = curr.next
+        curr = move(curr, 1)
     }
 
     def mix(originalIndex: Int) {
-        val entryToMix = find(originalIndex)
+        val entryToMix = findOriginalIndex(originalIndex)
         val beforeOld = entryToMix.prev
         val afterOld = entryToMix.next
-        val steps = mod(entryToMix.num)
+        val steps = normalizeSteps(entryToMix.num)
 
         var curr = entryToMix
         if (steps != 0) {
-            curr = move(curr, steps)
+            val actualSteps = if (steps > 0) steps else steps - 1 // Step one further when going left
+            curr = move(curr, actualSteps)
 
-            val beforeNew = curr
-            val afterNew = curr.next
+            println(s"${entryToMix.num} moves $steps step(s) between ${curr.num} and ${curr.next.num}:")
 
-            entryToMix.prev = beforeNew
-            entryToMix.next = afterNew
+            rem(entryToMix)
+            insert(entryToMix, curr)            
+        } else {
+            println(s"${entryToMix.num} does not move:")
+        }  
+    }
 
-            beforeOld.next = afterOld
-            afterOld.prev = beforeOld
-        }        
+    def rem(entry: ListEntry) = {
+        val left = entry.prev
+        val right = entry.next
+        left.next = right
+        right.prev = left
+    }
+
+    def insert(entry: ListEntry, after: ListEntry) = {
+        val left = after
+        val right = after.next
+        
+        left.next = entry
+        entry.prev = left
+        
+        right.prev = entry
+        entry.next = right
     }
 
     def mod(x: Int, m: Int = size): Int = (x % m + m) % m
@@ -74,7 +90,7 @@ class CircularList(numbers: List[Int]) {
         
         while (n < size) {
             print(s"${curr.num}, ")
-            curr = curr.next
+            curr = move(curr, 1)
             n += 1
         }
 
@@ -85,44 +101,75 @@ class CircularList(numbers: List[Int]) {
     def move(entry: ListEntry, steps: Int): ListEntry = {
         var n = 0
         var curr = entry
-        val stepsMod = mod(steps)
-        if (stepsMod == 0) {
-            curr
-        } else if (steps > 0) {
-            while (n < steps) {
+        val stepsNorm = normalizeSteps(steps)
+
+        if (steps == 1000) {
+            println(s"Steps norm = $stepsNorm");
+        }
+        
+        if (stepsNorm > 0) {
+            while (n < stepsNorm) {
                 curr = curr.next
                 n += 1
             }
-
-            curr
-        } else { // steps < 0
-            while (n < steps) {
+        } else if (stepsNorm < 0) {
+            while (n > stepsNorm) {
                 curr = curr.prev
                 n -= 1
-            }
+            }    
+        }
 
-            curr
-        }            
+        curr
     }
 
-    def find(originalIndex: Int): ListEntry = {
-        var curr = start
-        var n = 1
+    def normalizeSteps(steps: Int): Int = {
+        if (steps >= 0) {
+            steps % size
+        } else {
+            -(-steps % size)
+        }
+    }
 
-        while (n <= size) {
+    def findOriginalIndex(originalIndex: Int): ListEntry = {
+        var curr = start
+        var n = 0
+
+        while (n < size) {
             if (curr.originalIndex == originalIndex) {
                 return curr
             }
 
-            curr = curr.next
+            curr = move(curr, 1)
             n += 1
         }
 
         throw new Exception(s"Entry with original index $originalIndex not found.") 
     }
 
+    def findZero: ListEntry = {
+        var curr = start
+        var n = 0
+
+        while (n < size) {
+            if (curr.num == 0) {
+                return curr
+            }
+
+            curr = move(curr, 1)
+            n += 1
+        }
+
+        throw new Exception(s"Entry with value 0 not found.")
+    }
+
     def printResult = {
-    
+        val zero = findZero
+        val res1 = move(zero, 1000)
+        val res2 = move(res1, 1000)
+        val res3 = move(res2, 1000)
+        val total = res1.num + res2.num + res3.num
+
+        println(s"${res1.num} + ${res2.num} + ${res3.num} = $total")        
     }
 }
 
